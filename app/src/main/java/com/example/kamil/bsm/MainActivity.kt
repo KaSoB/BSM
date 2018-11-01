@@ -77,28 +77,23 @@ class MainActivity : Activity() {
 }
 object Utils {
     fun createSalt() :String {
+        return generateByteArray(128).toString(MainActivity.charset)
+    }
+    fun generateByteArray(n : Int) : ByteArray {
         val random = SecureRandom()
-        val bytes = ByteArray(128)
+        val bytes = ByteArray(n)
         random.nextBytes(bytes)
-        return bytes.toString(MainActivity.charset)
-    }
-    fun createAESKey() : ByteArray {
-        val keyGen = KeyGenerator.getInstance("AES")
-        keyGen.init(128)
-        return keyGen.generateKey().encoded
-    }
-    fun createVector() : String {
-        return UUID.randomUUID().toString().take(16) // 16 characters * 8 bit = 128 bits
+        return bytes
     }
 }
 object Message {
     private var encryptedMessage = ByteArray(128)
-    private var encryptionMessageKey = ByteArray(128)
-    private var encryptionMessageVector = ""
+    private var encryptionMessageKey = ByteArray(16)
+    private var encryptionMessageVector = ByteArray(16)
 
     fun saveMessage(input : String) {
-        encryptionMessageKey = Utils.createAESKey()
-        encryptionMessageVector = Utils.createVector()
+        encryptionMessageKey = Utils.generateByteArray(16)
+        encryptionMessageVector = Utils.generateByteArray(16)
         encryptedMessage = Message.encrypt(input.toByteArray(MainActivity.charset))
     }
     fun getMessage():String {
@@ -106,7 +101,7 @@ object Message {
     }
     @Throws(Exception::class)
     fun encrypt(text: ByteArray): ByteArray {
-        val iv = IvParameterSpec(encryptionMessageVector.toByteArray(MainActivity.charset))
+        val iv = IvParameterSpec(encryptionMessageVector)
         val secretKeySpec = SecretKeySpec(encryptionMessageKey, "AES")
         val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
         cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, iv)
@@ -114,7 +109,7 @@ object Message {
     }
     @Throws(Exception::class)
     fun decrypt(): ByteArray {
-        val iv = IvParameterSpec(encryptionMessageVector.toByteArray(MainActivity.charset))
+        val iv = IvParameterSpec(encryptionMessageVector)
         val secretKeySpec = SecretKeySpec(encryptionMessageKey, "AES")
         val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, iv)
