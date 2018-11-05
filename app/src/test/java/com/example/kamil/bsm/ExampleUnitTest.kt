@@ -11,7 +11,35 @@ import org.junit.Assert.*
  */
 class ExampleUnitTest {
     @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
+    fun password_isCorrect() {
+        val password =  "testtesttesttest"
+        val salt = Utils.createSalt()
+        val hashPassword = Password.generate(password, salt)
+
+        assertEquals(true, Password.isCorrect(password,salt, hashPassword))
+    }
+    @Test
+    fun password_isCorrect2() {
+        val password =  ""
+        val salt = Utils.createSalt()
+        val hashPassword = Password.generate(password, salt)
+
+        assertEquals(true, Password.isCorrect(password,salt, hashPassword))
+    }
+    @Test
+    fun password_isNotCorrect() {
+        val password =  "testtesttesttest"
+        val salt = Utils.createSalt()
+        val hashPassword = Password.generate(password, salt)
+
+        assertEquals(false, Password.isCorrect("testtesttesttest2",salt, hashPassword))
+    }
+    @Test
+    fun password_isNotCorrect2() {
+        val password =  ""
+        val salt = Utils.createSalt()
+        val hashPassword = Password.generate(password, salt)
+
+        assertEquals(false, Password.isCorrect(" ",salt, hashPassword))
     }
 }

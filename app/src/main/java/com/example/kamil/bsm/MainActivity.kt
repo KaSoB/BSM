@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Base64
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.security.NoSuchAlgorithmException
@@ -33,8 +34,11 @@ class MainActivity : Activity() {
         ConfirmPasswordButton.setOnClickListener {
             val input = InputPasswordPlainText.text.toString()
             val prefs = getSharedPreferences(SharedPreferenceName, Context.MODE_PRIVATE)
+            val salt = prefs.getString(MainActivity.SharedPreferenceSaltKey,"")
+            val hashPassword = prefs.getString(MainActivity.SharedPreferencePasswordKey,"")
             clearViewContent()
-            if (Password.isCorrect(input, prefs)){
+
+            if (Password.isCorrect(input, salt, hashPassword)){
                 // Show Message
                 SecretMessageTextView.text = Message.getMessage()
             }
@@ -44,11 +48,13 @@ class MainActivity : Activity() {
             val inputPassword = InputPasswordPlainText.text.toString()
             val inputNewPassword = ResetPasswordPlainText.text.toString()
             val prefs = getSharedPreferences(SharedPreferenceName, Context.MODE_PRIVATE)
+            val saltPref = prefs.getString(MainActivity.SharedPreferenceSaltKey,"")
+            val hashPasswordPref = prefs.getString(MainActivity.SharedPreferencePasswordKey,"")
             if(inputNewPassword.length < 12) {
                 Toast.makeText(applicationContext,"Minimalna długość hasła to 12 znaków",Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
-            if(!Password.isCorrect(inputPassword,prefs)) {
+            if(!Password.isCorrect(inputPassword,saltPref,hashPasswordPref)) {
                 Toast.makeText(applicationContext,"Wprowadź poprawne hasło",Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -122,12 +128,10 @@ object Password {
         val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
         val keySpec = PBEKeySpec((password+salt).toCharArray(), salt.toByteArray(), 2048, 256)
         val encoded = secretKeyFactory.generateSecret(keySpec).encoded
-        return String(encoded)
+        return String(encoded).trim()
     }
-    fun isCorrect(input : String, prefs : SharedPreferences) : Boolean {
-        val salt = prefs.getString(MainActivity.SharedPreferenceSaltKey,"")
+    fun isCorrect(input : String, salt : String, hashPassword : String) : Boolean {
         val hashInput = Password.generate(input,salt)
-        val hashPassword = prefs.getString(MainActivity.SharedPreferencePasswordKey,"")
         return hashInput == hashPassword
     }
 }
