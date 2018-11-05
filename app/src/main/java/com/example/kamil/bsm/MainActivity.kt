@@ -5,15 +5,14 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.security.NoSuchAlgorithmException
 import java.security.spec.InvalidKeySpecException
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
-import java.util.*
 import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
@@ -24,6 +23,9 @@ class MainActivity : Activity() {
         const val SharedPreferenceName = "com.example.kamil.bsm"
         const val SharedPreferencePasswordKey = "PreferencePassword"
         const val SharedPreferenceSaltKey = "PreferenceSalting"
+        const val SharedPreferenceMessage = "Message"
+        const val SharedPreferenceKey = "Key"
+        const val SharedPreferenceVector = "Vector"
         val charset = StandardCharsets.UTF_8!!
     }
 
@@ -40,7 +42,7 @@ class MainActivity : Activity() {
 
             if (Password.isCorrect(input, salt, hashPassword)){
                 // Show Message
-                SecretMessageTextView.text = Message.getMessage()
+                SecretMessageTextView.text = Message.getMessage(prefs)
             }
         }
 
@@ -69,7 +71,7 @@ class MainActivity : Activity() {
 
         ConfirmMessageButton.setOnClickListener {
             val input = SecretMessagePlainText.text.toString()
-            Message.saveMessage(input)
+            Message.saveMessage(input, getSharedPreferences(SharedPreferenceName, Context.MODE_PRIVATE))
             clearViewContent()
         }
 
@@ -93,20 +95,27 @@ object Utils {
     }
 }
 object Message {
-    private var encryptedMessage = ByteArray(128)
-    private var encryptionMessageKey = ByteArray(16)
-    private var encryptionMessageVector = ByteArray(16)
+    fun saveMessage(input : String, prefs: SharedPreferences) {
+        val messageVector = Utils.generateByteArray(16)
+        val messageKey = Utils.generateByteArray(16)
+        val message =  Message.encrypt(input.toByteArray(MainActivity.charset), messageVector, messageKey)
 
-    fun saveMessage(input : String) {
-        encryptionMessageKey = Utils.generateByteArray(16)
-        encryptionMessageVector = Utils.generateByteArray(16)
-        encryptedMessage = Message.encrypt(input.toByteArray(MainActivity.charset))
+        prefs.edit().putString(MainActivity.SharedPreferenceMessage,  Base64.encodeToString(message, Base64.DEFAULT).trim()).apply()
+        prefs.edit().putString(MainActivity.SharedPreferenceVector, Base64.encodeToString(messageVector, Base64.DEFAULT).trim()).apply()
+        prefs.edit().putString(MainActivity.SharedPreferenceKey, Base64.encodeToString(messageKey, Base64.DEFAULT).trim()).apply()
     }
-    fun getMessage():String {
-        return String(decrypt())
+    fun getMessage(prefs: SharedPreferences):String {
+        val message= prefs.getString(MainActivity.SharedPreferenceMessage,"")
+        val vector= prefs.getString(MainActivity.SharedPreferenceVector, "")
+        val key= prefs.getString(MainActivity.SharedPreferenceKey, "")
+
+        val messageBytes = Base64.decode(message, Base64.DEFAULT)
+        val vectorBytes = Base64.decode(vector, Base64.DEFAULT)
+        val keyBytes = Base64.decode(key, Base64.DEFAULT)
+        return String(decrypt(messageBytes,vectorBytes,keyBytes))
     }
     @Throws(Exception::class)
-    fun encrypt(text: ByteArray): ByteArray {
+    fun encrypt(text: ByteArray, encryptionMessageVector: ByteArray, encryptionMessageKey: ByteArray): ByteArray {
         val iv = IvParameterSpec(encryptionMessageVector)
         val secretKeySpec = SecretKeySpec(encryptionMessageKey, "AES")
         val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
@@ -114,7 +123,7 @@ object Message {
         return cipher.doFinal(text)
     }
     @Throws(Exception::class)
-    fun decrypt(): ByteArray {
+    fun decrypt(encryptedMessage : ByteArray, encryptionMessageVector : ByteArray, encryptionMessageKey : ByteArray): ByteArray {
         val iv = IvParameterSpec(encryptionMessageVector)
         val secretKeySpec = SecretKeySpec(encryptionMessageKey, "AES")
         val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
