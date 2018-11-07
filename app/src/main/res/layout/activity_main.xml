@@ -42,7 +42,7 @@
         android:ems="10"
         android:hint="Resetuj hasło"
         android:inputType="textPassword"
-        app:layout_constraintBottom_toBottomOf="@+id/ResetButton"
+        app:layout_constraintBottom_toBottomOf="@+id/ResetPasswordButton"
         app:layout_constraintEnd_toEndOf="@+id/InputPasswordPlainText"
         app:layout_constraintStart_toStartOf="@+id/InputPasswordPlainText"
         app:layout_constraintTop_toBottomOf="@+id/InputPasswordPlainText" />
@@ -58,7 +58,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/ResetButton"
+        android:id="@+id/ResetPasswordButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -80,12 +80,12 @@
         app:layout_constraintTop_toBottomOf="@+id/ResetPasswordPlainText" />
 
     <Button
-        android:id="@+id/ConfirmMessageButton"
+        android:id="@+id/SaveMessageButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="OK"
-        app:layout_constraintEnd_toEndOf="@+id/ResetButton"
-        app:layout_constraintTop_toBottomOf="@+id/ResetButton" />
+        app:layout_constraintEnd_toEndOf="@+id/ResetPasswordButton"
+        app:layout_constraintTop_toBottomOf="@+id/ResetPasswordButton" />
 
 </android.support.constraint.ConstraintLayout>
