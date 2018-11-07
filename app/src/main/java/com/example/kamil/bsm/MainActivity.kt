@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.security.NoSuchAlgorithmException
@@ -28,11 +29,12 @@ class MainActivity : Activity() {
         const val SharedPreferenceMessageVector = "MessageVector"
         val charset = StandardCharsets.UTF_8!!
     }
-    private val prefs = getSharedPreferences(SharedPreferenceName,Context.MODE_PRIVATE)
+    private lateinit var prefs : SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        prefs =  getSharedPreferences(SharedPreferenceName,Context.MODE_PRIVATE)
 
         ConfirmPasswordButton.setOnClickListener {
             val input = InputPasswordPlainText.text.toString()
@@ -63,15 +65,14 @@ class MainActivity : Activity() {
 
         SaveMessageButton.setOnClickListener {
             val input = InputPasswordPlainText.text.toString()
+            val textMessage = SecretMessagePlainText.text.toString()
             val salt = prefs.getString(MainActivity.SharedPreferencePasswordSalt,"")
             val key = prefs.getString(MainActivity.SharedPreferencePasswordKey,"")
-            clearViewContent()
             if (PBKDF2WithHmacSHA1.isCorrect(input, salt, key)){
-                val textMessage = SecretMessagePlainText.text.toString()
                 Message.saveMessage(textMessage, prefs, input)
             }
+            clearViewContent()
         }
-
     }
     private fun clearViewContent(){
         ResetPasswordPlainText.text.clear()
@@ -96,7 +97,7 @@ object Message {
         val iv = Utils.generateByteArray(16)
         val salt = Utils.createSalt()
         val key = PBKDF2WithHmacSHA1.createByteArrayKey(password, salt,128)
-        val secretMessage =  Message.encrypt(input.toByteArray(MainActivity.charset), iv, key)
+        val secretMessage =  AESCBCPKCS5Padding.encrypt(input.toByteArray(MainActivity.charset), iv, key)
 
         // transform some data into string to save in SharedPreference
         val secretMessageString = Base64.encodeToString(secretMessage, Base64.DEFAULT).trim()
@@ -110,34 +111,30 @@ object Message {
         val secretMessage = prefs.getString(MainActivity.SharedPreferenceMessage,"")
         val iv = prefs.getString(MainActivity.SharedPreferenceMessageVector, "")
         val salt = prefs.getString(MainActivity.SharedPreferenceMessageSalt,"")
-        val key = PBKDF2WithHmacSHA1.createByteArrayKey(password,salt)
+        val key = PBKDF2WithHmacSHA1.createByteArrayKey(password,salt,128)
 
         val messageBytes = Base64.decode(secretMessage, Base64.DEFAULT)
         val vectorBytes = Base64.decode(iv, Base64.DEFAULT)
 
-        return String(decrypt(messageBytes,vectorBytes,key))
+        return String(AESCBCPKCS5Padding.decrypt(messageBytes,vectorBytes,key))
     }
+}
+object AESCBCPKCS5Padding {
     @Throws(Exception::class)
-    fun encrypt(text: ByteArray, encryptionMessageVector: ByteArray, encryptionMessageKey: ByteArray): ByteArray {
-        val iv = IvParameterSpec(encryptionMessageVector)
-        val secretKeySpec = SecretKeySpec(encryptionMessageKey, "AES")
+    fun encrypt(content: ByteArray, vector: ByteArray, key: ByteArray): ByteArray {
+        val iv = IvParameterSpec(vector)
+        val secretKeySpec = SecretKeySpec(key, "AES")
         val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
         cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, iv)
-        return cipher.doFinal(text)
-    }
-    @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
-    fun generateKey(password: String, salt: String) : ByteArray {
-        val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
-        val keySpec = PBEKeySpec(password.toCharArray(), salt.toByteArray(), 2048, 128)
-        return secretKeyFactory.generateSecret(keySpec).encoded
+        return cipher.doFinal(content)
     }
     @Throws(Exception::class)
-    fun decrypt(encryptedMessage : ByteArray, encryptionMessageVector : ByteArray, encryptionMessageKey : ByteArray): ByteArray {
-        val iv = IvParameterSpec(encryptionMessageVector)
-        val secretKeySpec = SecretKeySpec(encryptionMessageKey, "AES")
+    fun decrypt(content : ByteArray, vector : ByteArray, key : ByteArray): ByteArray {
+        val iv = IvParameterSpec(vector)
+        val secretKeySpec = SecretKeySpec(key, "AES")
         val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, iv)
-        return cipher.doFinal(encryptedMessage)
+        return cipher.doFinal(content)
     }
 }
 object PBKDF2WithHmacSHA1 {
