@@ -19,7 +19,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/SecretMessagePlainText" />
+        app:layout_constraintTop_toBottomOf="@+id/FingerPrintButton" />
 
     <EditText
         android:id="@+id/InputPasswordPlainText"
@@ -85,5 +85,14 @@
         android:text="SAVE"
         app:layout_constraintEnd_toEndOf="@+id/ResetPasswordButton"
         app:layout_constraintTop_toBottomOf="@+id/ResetPasswordButton" />
+
+    <Button
+        android:id="@+id/FingerPrintButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Finger"
+        app:layout_constraintEnd_toEndOf="@+id/SaveMessageButton"
+        app:layout_constraintTop_toBottomOf="@+id/SaveMessageButton" />
 
 </android.support.constraint.ConstraintLayout>

@@ -9,7 +9,6 @@ import com.example.kamil.bsm.algorithms.PBKDF2WithHmacSHA1
 import kotlinx.android.synthetic.main.activity_main.*
 import java.nio.charset.StandardCharsets
 
-
 class MainActivity : Activity() {
     companion object {
         const val SharedPreferenceName = "com.example.kamil.bsm"
@@ -22,10 +21,13 @@ class MainActivity : Activity() {
     }
     private lateinit var prefs : SharedPreferences
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         prefs =  getSharedPreferences(SharedPreferenceName,Context.MODE_PRIVATE)
+
+
 
         ConfirmPasswordButton.setOnClickListener {
             val input = InputPasswordPlainText.text.toString()
