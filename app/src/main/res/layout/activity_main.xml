@@ -25,67 +25,65 @@
         android:id="@+id/InputPasswordPlainText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="16dp"
         android:layout_marginEnd="8dp"
         android:ems="10"
-        android:hint="Wprowadź hasło"
+        android:hint="Password"
         android:inputType="textPassword"
+        app:layout_constraintBaseline_toBaselineOf="@+id/ConfirmPasswordButton"
         app:layout_constraintEnd_toStartOf="@+id/ConfirmPasswordButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/ConfirmPasswordButton" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <EditText
         android:id="@+id/ResetPasswordPlainText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
         android:ems="10"
-        android:hint="Resetuj hasło"
+        android:hint="Reset password"
         android:inputType="textPassword"
-        app:layout_constraintBottom_toBottomOf="@+id/ResetButton"
-        app:layout_constraintEnd_toEndOf="@+id/InputPasswordPlainText"
-        app:layout_constraintStart_toStartOf="@+id/InputPasswordPlainText"
-        app:layout_constraintTop_toBottomOf="@+id/InputPasswordPlainText" />
+        app:layout_constraintBaseline_toBaselineOf="@+id/ResetPasswordButton"
+        app:layout_constraintEnd_toStartOf="@+id/ResetPasswordButton"
+        app:layout_constraintStart_toStartOf="@+id/InputPasswordPlainText" />
 
     <Button
         android:id="@+id/ConfirmPasswordButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginEnd="16dp"
         android:text="CONFIRM"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/ResetButton"
+        android:id="@+id/ResetPasswordButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
         android:text="Reset"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/ConfirmPasswordButton"
         app:layout_constraintTop_toBottomOf="@+id/ConfirmPasswordButton" />
 
     <EditText
         android:id="@+id/SecretMessagePlainText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
         android:ems="10"
-        android:hint="Podaj sekretną wiadomość"
+        android:hint="Secret Message"
         android:inputType="textPersonName"
-        app:layout_constraintEnd_toEndOf="@+id/ResetPasswordPlainText"
-        app:layout_constraintStart_toStartOf="@+id/ResetPasswordPlainText"
-        app:layout_constraintTop_toBottomOf="@+id/ResetPasswordPlainText" />
+        app:layout_constraintBaseline_toBaselineOf="@+id/SaveMessageButton"
+        app:layout_constraintEnd_toStartOf="@+id/SaveMessageButton"
+        app:layout_constraintStart_toStartOf="@+id/ResetPasswordPlainText" />
 
     <Button
-        android:id="@+id/ConfirmMessageButton"
+        android:id="@+id/SaveMessageButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="OK"
-        app:layout_constraintEnd_toEndOf="@+id/ResetButton"
-        app:layout_constraintTop_toBottomOf="@+id/ResetButton" />
+        android:text="SAVE"
+        app:layout_constraintEnd_toEndOf="@+id/ResetPasswordButton"
+        app:layout_constraintTop_toBottomOf="@+id/ResetPasswordButton" />
 
 </android.support.constraint.ConstraintLayout>

@@ -4,69 +4,75 @@ import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Base64
+import android.util.Log
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.security.NoSuchAlgorithmException
 import java.security.spec.InvalidKeySpecException
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
-import java.util.*
 import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import javax.crypto.spec.IvParameterSpec
 
+
 class MainActivity : Activity() {
     companion object {
         const val SharedPreferenceName = "com.example.kamil.bsm"
-        const val SharedPreferencePasswordKey = "PreferencePassword"
-        const val SharedPreferenceSaltKey = "PreferenceSalting"
+        const val SharedPreferencePasswordKey = "PasswordKey"
+        const val SharedPreferencePasswordSalt = "PasswordSalt"
+        const val SharedPreferenceMessage = "Message"
+        const val SharedPreferenceMessageSalt = "MessageSalt"
+        const val SharedPreferenceMessageVector = "MessageVector"
         val charset = StandardCharsets.UTF_8!!
     }
+    private lateinit var prefs : SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        prefs =  getSharedPreferences(SharedPreferenceName,Context.MODE_PRIVATE)
 
         ConfirmPasswordButton.setOnClickListener {
             val input = InputPasswordPlainText.text.toString()
-            val prefs = getSharedPreferences(SharedPreferenceName, Context.MODE_PRIVATE)
+            val key = prefs.getString(MainActivity.SharedPreferencePasswordKey,"")
+            val salt = prefs.getString(MainActivity.SharedPreferencePasswordSalt,"")
             clearViewContent()
-            if (Password.isCorrect(input, prefs)){
-                // Show Message
-                SecretMessageTextView.text = Message.getMessage()
+
+            if (PBKDF2WithHmacSHA1.isCorrect(input, salt, key)){
+                // show Message
+                SecretMessageTextView.text = Message.getMessage(prefs, input)
+            } else {
+                Toast.makeText(this,"Password is incorrect", Toast.LENGTH_LONG).show()
             }
         }
 
-        ResetButton.setOnClickListener {
-            val inputPassword = InputPasswordPlainText.text.toString()
-            val inputNewPassword = ResetPasswordPlainText.text.toString()
-            val prefs = getSharedPreferences(SharedPreferenceName, Context.MODE_PRIVATE)
-            if(inputNewPassword.length < 12) {
-                Toast.makeText(applicationContext,"Minimalna długość hasła to 12 znaków",Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-            if(!Password.isCorrect(inputPassword,prefs)) {
-                Toast.makeText(applicationContext,"Wprowadź poprawne hasło",Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
+        ResetPasswordButton.setOnClickListener {
+            //TODO: Firstly, we have to check if last stored password is correct
+            val input = ResetPasswordPlainText.text.toString()
             val salt = Utils.createSalt()
-            val hashPassword = Password.generate(inputNewPassword, salt)
-            // save hash password and salt to SharedPreference
-            prefs.edit().putString(SharedPreferencePasswordKey, hashPassword).apply()
-            prefs.edit().putString(SharedPreferenceSaltKey, salt).apply()
+            val key = PBKDF2WithHmacSHA1.createStringKey(input, salt)
+
+            // save key and salt to SharedPreference
+            prefs.edit().putString(SharedPreferencePasswordKey, key).apply()
+            prefs.edit().putString(SharedPreferencePasswordSalt, salt).apply()
 
             clearViewContent()
         }
 
-        ConfirmMessageButton.setOnClickListener {
-            val input = SecretMessagePlainText.text.toString()
-            Message.saveMessage(input)
+        SaveMessageButton.setOnClickListener {
+            val input = InputPasswordPlainText.text.toString()
+            val textMessage = SecretMessagePlainText.text.toString()
+            val salt = prefs.getString(MainActivity.SharedPreferencePasswordSalt,"")
+            val key = prefs.getString(MainActivity.SharedPreferencePasswordKey,"")
+            if (PBKDF2WithHmacSHA1.isCorrect(input, salt, key)){
+                Message.saveMessage(textMessage, prefs, input)
+            }
             clearViewContent()
         }
-
     }
     private fun clearViewContent(){
         ResetPasswordPlainText.text.clear()
@@ -87,47 +93,62 @@ object Utils {
     }
 }
 object Message {
-    private var encryptedMessage = ByteArray(128)
-    private var encryptionMessageKey = ByteArray(16)
-    private var encryptionMessageVector = ByteArray(16)
+    fun saveMessage(input : String, prefs: SharedPreferences, password : String) {
+        val iv = Utils.generateByteArray(16)
+        val salt = Utils.createSalt()
+        val key = PBKDF2WithHmacSHA1.createByteArrayKey(password, salt,128)
+        val secretMessage =  AESCBCPKCS5Padding.encrypt(input.toByteArray(MainActivity.charset), iv, key)
 
-    fun saveMessage(input : String) {
-        encryptionMessageKey = Utils.generateByteArray(16)
-        encryptionMessageVector = Utils.generateByteArray(16)
-        encryptedMessage = Message.encrypt(input.toByteArray(MainActivity.charset))
+        // transform some data into string to save in SharedPreference
+        val secretMessageString = Base64.encodeToString(secretMessage, Base64.DEFAULT).trim()
+        val ivString = Base64.encodeToString(iv, Base64.DEFAULT).trim()
+        // save message, iv and (another) salt to SharedPreference
+        prefs.edit().putString(MainActivity.SharedPreferenceMessage, secretMessageString).apply()
+        prefs.edit().putString(MainActivity.SharedPreferenceMessageSalt, salt).apply()
+        prefs.edit().putString(MainActivity.SharedPreferenceMessageVector, ivString).apply()
     }
-    fun getMessage():String {
-        return String(decrypt())
-    }
-    @Throws(Exception::class)
-    fun encrypt(text: ByteArray): ByteArray {
-        val iv = IvParameterSpec(encryptionMessageVector)
-        val secretKeySpec = SecretKeySpec(encryptionMessageKey, "AES")
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
-        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, iv)
-        return cipher.doFinal(text)
-    }
-    @Throws(Exception::class)
-    fun decrypt(): ByteArray {
-        val iv = IvParameterSpec(encryptionMessageVector)
-        val secretKeySpec = SecretKeySpec(encryptionMessageKey, "AES")
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, iv)
-        return cipher.doFinal(encryptedMessage)
+    fun getMessage(prefs: SharedPreferences, password : String):String {
+        val secretMessage = prefs.getString(MainActivity.SharedPreferenceMessage,"")
+        val iv = prefs.getString(MainActivity.SharedPreferenceMessageVector, "")
+        val salt = prefs.getString(MainActivity.SharedPreferenceMessageSalt,"")
+        val key = PBKDF2WithHmacSHA1.createByteArrayKey(password,salt,128)
+
+        val messageBytes = Base64.decode(secretMessage, Base64.DEFAULT)
+        val vectorBytes = Base64.decode(iv, Base64.DEFAULT)
+
+        return String(AESCBCPKCS5Padding.decrypt(messageBytes,vectorBytes,key))
     }
 }
-object Password {
-    @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
-    fun generate(password: String, salt: String) : String {
-        val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
-        val keySpec = PBEKeySpec((password+salt).toCharArray(), salt.toByteArray(), 2048, 256)
-        val encoded = secretKeyFactory.generateSecret(keySpec).encoded
-        return String(encoded)
+object AESCBCPKCS5Padding {
+    @Throws(Exception::class)
+    fun encrypt(content: ByteArray, vector: ByteArray, key: ByteArray): ByteArray {
+        val iv = IvParameterSpec(vector)
+        val secretKeySpec = SecretKeySpec(key, "AES")
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
+        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, iv)
+        return cipher.doFinal(content)
     }
-    fun isCorrect(input : String, prefs : SharedPreferences) : Boolean {
-        val salt = prefs.getString(MainActivity.SharedPreferenceSaltKey,"")
-        val hashInput = Password.generate(input,salt)
-        val hashPassword = prefs.getString(MainActivity.SharedPreferencePasswordKey,"")
-        return hashInput == hashPassword
+    @Throws(Exception::class)
+    fun decrypt(content : ByteArray, vector : ByteArray, key : ByteArray): ByteArray {
+        val iv = IvParameterSpec(vector)
+        val secretKeySpec = SecretKeySpec(key, "AES")
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
+        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, iv)
+        return cipher.doFinal(content)
+    }
+}
+object PBKDF2WithHmacSHA1 {
+    @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
+    fun createStringKey(input: String, salt: String, keyLength : Int = 256) : String {
+        return String(createByteArrayKey(input,salt,keyLength)).trim()
+    }
+    @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
+    fun createByteArrayKey(input: String, salt: String, keyLength : Int = 256) : ByteArray {
+        val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
+        val keySpec = PBEKeySpec((input+salt).toCharArray(), salt.toByteArray(), 2048, keyLength)
+        return secretKeyFactory.generateSecret(keySpec).encoded
+    }
+    fun isCorrect(input : String, salt : String, key : String) : Boolean {
+        return key == PBKDF2WithHmacSHA1.createStringKey(input,salt)
     }
 }
