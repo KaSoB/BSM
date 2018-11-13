@@ -1,5 +1,6 @@
 package com.example.kamil.bsm
 
+import com.example.kamil.bsm.algorithms.PBKDF2WithHmacSHA1
 import org.junit.Test
 
 import org.junit.Assert.*
