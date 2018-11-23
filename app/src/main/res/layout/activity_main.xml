@@ -14,12 +14,12 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
-        android:text="   "
+        android:text=" - "
         android:textAlignment="center"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/SecretMessagePlainText" />
+        app:layout_constraintBottom_toTopOf="@+id/imageView"
+        app:layout_constraintEnd_toEndOf="@+id/SaveMessageButton"
+        app:layout_constraintStart_toStartOf="@+id/SecretMessagePlainText"
+        app:layout_constraintTop_toBottomOf="@+id/SecretMessageLabel" />
 
     <EditText
         android:id="@+id/InputPasswordPlainText"
@@ -71,7 +71,7 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:ems="10"
-        android:hint="Secret Message"
+        android:hint="Secret message"
         android:inputType="textPersonName"
         app:layout_constraintBaseline_toBaselineOf="@+id/SaveMessageButton"
         app:layout_constraintEnd_toStartOf="@+id/SaveMessageButton"
@@ -85,5 +85,27 @@
         android:text="SAVE"
         app:layout_constraintEnd_toEndOf="@+id/ResetPasswordButton"
         app:layout_constraintTop_toBottomOf="@+id/ResetPasswordButton" />
+
+    <TextView
+        android:id="@+id/SecretMessageLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="SecretMessage"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="@+id/SecretMessageTextView"
+        app:layout_constraintStart_toStartOf="@+id/SecretMessageTextView"
+        app:layout_constraintTop_toBottomOf="@+id/SecretMessagePlainText" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:src="@drawable/fingerprint"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/SecretMessageTextView"
+        app:layout_constraintStart_toStartOf="@+id/SecretMessageTextView" />
 
 </android.support.constraint.ConstraintLayout>
