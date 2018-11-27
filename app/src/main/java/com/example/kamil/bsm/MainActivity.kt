@@ -5,10 +5,14 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.hardware.fingerprint.FingerprintManager
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import com.example.kamil.bsm.algorithms.PBKDF2WithHmacSHA1
 import kotlinx.android.synthetic.main.activity_main.*
 import java.nio.charset.StandardCharsets
+import android.speech.tts.TextToSpeech
+
+
 
 class MainActivity : Activity() {
     companion object {
@@ -20,7 +24,7 @@ class MainActivity : Activity() {
         const val SharedPreferenceMessageVector = "MessageVector"
         val charset = StandardCharsets.UTF_8!!
     }
-
+ 
     private lateinit var prefs : SharedPreferences
 
     private var fingerPrintListener = object : FingerprintManager.AuthenticationCallback(){
@@ -35,7 +39,11 @@ class MainActivity : Activity() {
         }
         override fun onAuthenticationSucceeded(result: FingerprintManager.AuthenticationResult) {
             Toast.makeText(baseContext, "Authentication succeeded.", Toast.LENGTH_LONG).show()
-            showMessage(InputPasswordPlainText.text.toString())
+            val input = InputPasswordPlainText.text.toString()
+            if (input.isNotEmpty()){
+                showMessage(InputPasswordPlainText.text.toString())
+            }
+
         }
     }
 
@@ -65,7 +73,6 @@ class MainActivity : Activity() {
             val input = ResetPasswordPlainText.text.toString()
             val salt = Utils.createSalt()
             val key = PBKDF2WithHmacSHA1.createStringKey(input, salt)
-
             // save key and salt to SharedPreference
             prefs.edit().putString(SharedPreferencePasswordKey, key).apply()
             prefs.edit().putString(SharedPreferencePasswordSalt, salt).apply()
